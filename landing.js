@@ -94,10 +94,10 @@ function initLandingPage() {
     });
 
     // Filter only available foods
-    const availableProducts = productsData.filter(p => p.available === true);
+    const availableProducts = productsData; // Tampilkan semua produk
 
     if (availableProducts.length === 0) {
-      container.innerHTML = '<p style="text-align:center; grid-column:1/-1; color: var(--text-muted);">Belum ada menu yang tersedia saat ini.</p>';
+      container.innerHTML = '<p style="text-align:center; grid-column:1/-1; color: var(--text-muted);">Belum ada menu saat ini.</p>';
       return;
     }
 
@@ -113,6 +113,9 @@ function initLandingPage() {
       // but without real-time backend calculations, we will rely on Syncro OS setting `available: false` when out of stock.
       // However, if the product explicitly has a stock property, we check it.
       let outOfStock = false;
+      if (product.available === false) {
+        outOfStock = true;
+      }
       if (product.stock !== undefined && product.stock <= 0) {
         outOfStock = true;
       }
@@ -120,7 +123,7 @@ function initLandingPage() {
       const card = document.createElement('div');
       card.className = 'menu-card';
       card.innerHTML = `
-        <div class="menu-img" style="height:200px;overflow:hidden;">
+        <div class="menu-img" style="height:200px;overflow:hidden;${outOfStock ? 'filter:grayscale(100%);opacity:0.6;' : ''}">
           ${mediaHtml}
         </div>
         <div class="menu-info">
@@ -128,24 +131,14 @@ function initLandingPage() {
           <p class="menu-desc">${product.desc || 'Sajian lezat dengan cita rasa otentik.'}</p>
           <div class="menu-footer">
             <div class="menu-price">${formatRupiah(product.price || 0)}</div>
-            ${outOfStock 
-              ? `<span style="color:var(--danger);font-weight:600;font-size:13px;">Stok Habis</span>`
-              : `<button class="btn-add" data-id="${product.id}" title="Tambah ke Keranjang"><i class="fas fa-plus"></i></button>`
-            }
+            <div class="qty-control-wrapper" data-id="${product.id}" data-outofstock="${outOfStock}"></div>
           </div>
         </div>
       `;
       container.appendChild(card);
     });
 
-    // Attach Add to Cart Listeners
-    document.querySelectorAll('.btn-add').forEach(btn => {
-      btn.addEventListener('click', (e) => {
-        const id = e.currentTarget.getAttribute('data-id');
-        const prod = availableProducts.find(p => p.id === id);
-        if (prod) addToCart(prod);
-      });
-    });
+    updateCartUI(); // Initial render for dynamic buttons
   });
 
   // Cart Logic
@@ -161,6 +154,25 @@ function initLandingPage() {
     updateCartUI();
   }
 
+  function removeFromCart(id) {
+    if (cart[id]) {
+      cart[id].qty--;
+      if (cart[id].qty <= 0) {
+        delete cart[id];
+      }
+      updateCartUI();
+    }
+  }
+
+  window.handleQtyAction = function(action, id) {
+     if (action === 'add') {
+         const prod = productsData.find(p => p.id === id);
+         if (prod) addToCart(prod);
+     } else if (action === 'minus') {
+         removeFromCart(id);
+     }
+  };
+
   function updateCartUI() {
     const totalItems = Object.values(cart).reduce((sum, item) => sum + item.qty, 0);
     if (totalItems > 0) {
@@ -169,83 +181,207 @@ function initLandingPage() {
     } else {
       cartBubble.style.display = 'none';
     }
+
+    // Update individual product card controls
+    document.querySelectorAll('.qty-control-wrapper').forEach(wrapper => {
+       const id = wrapper.getAttribute('data-id');
+       const cartItem = cart[id];
+       const outOfStock = wrapper.getAttribute('data-outofstock') === 'true';
+
+       if (outOfStock) {
+           wrapper.innerHTML = `<span style="color:var(--danger);font-weight:600;font-size:13px;padding:4px 8px;background:var(--danger-light);border-radius:4px">Habis</span>`;
+       } else if (cartItem && cartItem.qty > 0) {
+           wrapper.innerHTML = `
+              <div class="qty-wrapper">
+                 <button class="btn-qty-minus" onclick="handleQtyAction('minus', '${id}')"><i class="fas fa-minus" style="font-size:12px;"></i></button>
+                 <span class="qty-text">${cartItem.qty}</span>
+                 <button class="btn-qty-plus" onclick="handleQtyAction('add', '${id}')"><i class="fas fa-plus" style="font-size:12px;"></i></button>
+              </div>
+           `;
+       } else {
+           wrapper.innerHTML = `<button class="btn-add" onclick="handleQtyAction('add', '${id}')" title="Tambah ke Keranjang"><i class="fas fa-plus"></i></button>`;
+       }
+    });
   }
 
-  // Redirect to WhatsApp logic & Sync to Firestore
-  cartBubble.addEventListener('click', async () => {
+  // Global state for checkout
+  let checkoutLat = null;
+  let checkoutLng = null;
+  let checkoutMapsUrl = "";
+
+  // Open Modal
+  cartBubble.addEventListener('click', () => {
     if (Object.keys(cart).length === 0) return;
-    
-    // Prompt for customer details (Simplified for this integration)
-    const custName = prompt("Masukkan Nama Anda:") || "Pelanggan Online";
-    let waNumber = prompt("Masukkan Nomor WhatsApp Anda (contoh: 0812...):") || "";
-    const address = prompt("Masukkan Alamat Pengiriman:") || "";
-    const mapsLink = prompt("Masukkan Share Lokasi (Google Maps) (Opsional):") || "";
-    
-    if(!waNumber) {
-      alert("Pesanan dibatalkan: Nomor WhatsApp wajib diisi.");
+    document.getElementById('checkout-modal').style.display = 'flex';
+    document.getElementById('checkout-step-1').style.display = 'block';
+    document.getElementById('checkout-step-2').style.display = 'none';
+    document.getElementById('modal-title').textContent = 'Data Pengiriman';
+  });
+
+  window.closeCheckoutModal = function() {
+    document.getElementById('checkout-modal').style.display = 'none';
+  };
+
+  window.getLocation = function() {
+    const btn = document.getElementById('btn-location');
+    const status = document.getElementById('location-status');
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mendapatkan Lokasi...';
+    btn.disabled = true;
+
+    if (!navigator.geolocation) {
+      alert("Browser Anda tidak mendukung fitur lokasi.");
+      btn.innerHTML = '<i class="fas fa-map-marker-alt"></i> 📍 Pilih Lokasi Saya';
+      btn.disabled = false;
       return;
     }
 
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        checkoutLat = position.coords.latitude;
+        checkoutLng = position.coords.longitude;
+        checkoutMapsUrl = `https://maps.google.com/?q=${checkoutLat},${checkoutLng}`;
+        
+        btn.style.display = 'none';
+        status.style.display = 'block';
+      },
+      (error) => {
+        console.error(error);
+        alert("Gagal mendapatkan lokasi. Pastikan Anda memberikan izin akses lokasi.");
+        btn.innerHTML = '<i class="fas fa-map-marker-alt"></i> 📍 Pilih Lokasi Saya';
+        btn.disabled = false;
+      }
+    );
+  };
+
+  window.proceedToPayment = function() {
+    const name = document.getElementById('cust-name').value.trim();
+    const wa = document.getElementById('cust-wa').value.trim();
+    const address = document.getElementById('cust-address').value.trim();
+
+    if (!name || !wa || !address) {
+      alert("Mohon lengkapi Nama Lengkap, Nomor WhatsApp, dan Alamat Lengkap.");
+      return;
+    }
+
+    // Render Summary
+    let total = 0;
+    const summaryContainer = document.getElementById('order-summary');
+    summaryContainer.innerHTML = '';
+
+    Object.values(cart).forEach(item => {
+      const subtotal = item.qty * item.price;
+      total += subtotal;
+      summaryContainer.innerHTML += `
+        <div class="order-summary-item">
+          <span>${item.qty}x ${item.name}</span>
+          <span>${formatRupiah(subtotal)}</span>
+        </div>
+      `;
+    });
+
+    document.getElementById('order-total-price').textContent = formatRupiah(total);
+
+    document.getElementById('checkout-step-1').style.display = 'none';
+    document.getElementById('checkout-step-2').style.display = 'block';
+    document.getElementById('modal-title').textContent = 'Pembayaran QRIS';
+  };
+
+  window.backToForm = function() {
+    document.getElementById('checkout-step-2').style.display = 'none';
+    document.getElementById('checkout-step-1').style.display = 'block';
+    document.getElementById('modal-title').textContent = 'Data Pengiriman';
+  };
+
+  window.confirmPayment = async function() {
+    const name = document.getElementById('cust-name').value.trim();
+    const wa = document.getElementById('cust-wa').value.trim();
+    const address = document.getElementById('cust-address').value.trim();
+    const notes = document.getElementById('cust-notes').value.trim();
+    
     let total = 0;
     const itemsForDB = [];
-    let text = `Halo *Sri Soengkem*, saya ingin memesan:\n\n`;
-    
+    let listItemsText = '';
+
     Object.values(cart).forEach(item => {
       const subtotal = item.qty * item.price;
       total += subtotal;
       itemsForDB.push({ productId: item.id, qty: item.qty, price: item.price });
-      text += `- ${item.qty}x ${item.name} (${formatRupiah(subtotal)})\n`;
+      listItemsText += `- ${item.name} x${item.qty}\n`;
     });
-    
-    text += `\n*Total: ${formatRupiah(total)}*`;
-    text += `\nNama: ${custName}\nAlamat: ${address}\n`;
-    if (mapsLink) text += `Maps: ${mapsLink}\n`;
-    text += `\nMohon diproses. Terima kasih.`;
+
+    // Pre-open window to bypass popup blocker
+    const waWindow = window.open('about:blank', '_blank');
 
     try {
-      // 1. Write Order to Firestore
       const orderId = 'o' + Date.now();
       const newOrder = {
         id: orderId,
-        date: new Date().toISOString(),
-        customerName: custName,
-        wa: waNumber,
+        customerName: name,
+        phone: wa,
+        wa: wa, // Backup for Syncro OS Dashboard
         address: address,
-        mapsLink: mapsLink,
+        notes: notes,
+        latitude: checkoutLat,
+        longitude: checkoutLng,
+        mapsUrl: checkoutMapsUrl || "",
         items: itemsForDB,
         total: total,
-        payment: 'transfer',
-        status: 'pending',
-        paymentStatus: 'menunggu'
+        paymentStatus: 'menunggu',
+        status: 'pending', // Added for Syncro OS backwards compatibility
+        createdAt: new Date().toISOString(),
+        date: new Date().toISOString() // Backup for Syncro OS Dashboard
       };
-      
+
       await window.fbSetDoc(window.fbDoc(window.db, 'orders', orderId), newOrder);
 
-      // 2. Sync Customer Data
-      const custId = 'c_' + waNumber.replace(/\D/g, '');
-      // Try to get customer, if not exist, create. Since we don't have getDoc imported easily, we can just use setDoc with merge:true
+      const custId = 'c_' + wa.replace(/\D/g, '');
       await window.fbSetDoc(window.fbDoc(window.db, 'customers', custId), {
         id: custId,
-        name: custName,
-        wa: waNumber,
+        name: name,
+        wa: wa,
         address: address
-        // totalOrders & totalSpent will be updated by Admin Dashboard later if needed, or we just merge.
       }, { merge: true });
 
-      // 3. Clear cart and notify
       cart = {};
       updateCartUI();
-      
-      alert("Pesanan Anda telah berhasil dikirim ke restoran!");
+      window.closeCheckoutModal();
 
-      // 4. Open WhatsApp
-      const adminWa = window.storeWaNumber || '6281234567890'; // Use synced WA
-      const url = `https://wa.me/${adminWa}?text=${encodeURIComponent(text)}`;
-      window.open(url, '_blank');
+      const text = `Halo Sri Soengkem,
+
+Saya ingin memesan:
+
+${listItemsText}
+Total: ${formatRupiah(total)}
+
+Nama: ${name}
+Nomor HP: ${wa}
+Alamat: ${address}
+Share Location: ${checkoutMapsUrl || '-'}
+
+Terima kasih.`;
+
+      const adminWa = window.storeWaNumber || '6281234567890';
       
-    } catch(err) {
+      // Update location of the pre-opened tab
+      waWindow.location.href = `https://wa.me/${adminWa}?text=${encodeURIComponent(text)}`;
+      
+      // Reset Form fields
+      document.getElementById('cust-name').value = '';
+      document.getElementById('cust-wa').value = '';
+      document.getElementById('cust-address').value = '';
+      document.getElementById('cust-notes').value = '';
+      document.getElementById('btn-location').style.display = 'flex';
+      document.getElementById('location-status').style.display = 'none';
+      document.getElementById('btn-location').disabled = false;
+      document.getElementById('btn-location').innerHTML = '<i class="fas fa-map-marker-alt"></i> 📍 Pilih Lokasi Saya';
+      checkoutLat = null;
+      checkoutLng = null;
+      checkoutMapsUrl = "";
+
+    } catch (err) {
+      waWindow.close();
       console.error("Gagal mengirim pesanan:", err);
       alert("Terjadi kesalahan saat memproses pesanan Anda. Silakan coba lagi.");
     }
-  });
+  };
 }
