@@ -300,7 +300,17 @@
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/Syncro-OS/service-worker.js')
+        // Unregister old Service Workers
+        navigator.serviceWorker.getRegistrations().then(registrations => {
+          registrations.forEach(registration => {
+            if (registration.active && !registration.active.scriptURL.endsWith('/service-worker.js')) {
+              registration.unregister();
+            }
+          });
+        });
+
+        // Register new Service Worker
+        navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
           .then(registration => {
             console.log('ServiceWorker registration successful with scope: ', registration.scope);
           })
