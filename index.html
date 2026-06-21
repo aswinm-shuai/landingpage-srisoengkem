@@ -5,11 +5,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Sri Soengkem - Warisan Rasa Nusantara</title>
+  <link rel="icon" href="assets/icons/favicon.png">
+  <link rel="manifest" href="manifest.json">
   <link
     href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap"
     rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-  <link rel="stylesheet" href="./landing.css">
+  <link rel="stylesheet" href="./css/style.css">
 
   <!-- Firebase SDK -->
   <script type="module">
@@ -229,13 +231,72 @@
     </div>
   </footer>
 
-  <!-- CART / CHECKOUT MODAL (Simplified for this file, Logic in main.js) -->
+  <!-- CART / CHECKOUT MODAL -->
   <div class="cart-bubble" id="cart-bubble" style="display: none;">
     <i class="fas fa-shopping-bag"></i>
     <div class="cart-count" id="cart-count">0</div>
   </div>
 
-  <script src="./landing.js"></script>
+  <div id="checkout-modal" class="modal-backdrop" style="display: none;">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="modal-title">Data Pengiriman</h3>
+        <button class="btn-close" onclick="closeCheckoutModal()"><i class="fas fa-times"></i></button>
+      </div>
+
+      <!-- TAHAP 1: FORM PENGIRIMAN -->
+      <div id="checkout-step-1" class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Nama Lengkap *</label>
+          <input type="text" id="cust-name" class="form-input" placeholder="Masukkan nama Anda">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Nomor WhatsApp *</label>
+          <input type="tel" id="cust-wa" class="form-input" placeholder="Contoh: 081234567890">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Alamat Lengkap *</label>
+          <textarea id="cust-address" class="form-input" rows="3" placeholder="Masukkan alamat lengkap"></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Lokasi Pengiriman (Opsional)</label>
+          <button id="btn-location" class="btn-secondary"
+            style="width:100%; display:flex; justify-content:center; align-items:center; gap:8px"
+            onclick="getLocation()">
+            <i class="fas fa-map-marker-alt"></i> 📍 Pilih Lokasi Saya
+          </button>
+          <p id="location-status" style="font-size:12px; color:var(--emerald); margin-top:8px; display:none;"><i
+              class="fas fa-check-circle"></i> Lokasi berhasil dipilih</p>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Catatan Pesanan (Opsional)</label>
+          <textarea id="cust-notes" class="form-input" rows="2" placeholder="Pedas, tanpa sayur, dll..."></textarea>
+        </div>
+        <button class="btn-primary btn-block" onclick="proceedToPayment()">Lanjut Pembayaran</button>
+      </div>
+
+      <!-- TAHAP 2: PEMBAYARAN QRIS -->
+      <div id="checkout-step-2" class="modal-body" style="display: none;">
+        <div class="order-summary" id="order-summary"></div>
+        <div class="order-total">Total: <span id="order-total-price">Rp 0</span></div>
+
+        <div class="qris-container">
+          <h4>Scan QRIS untuk Membayar</h4>
+          <img src="https://upload.wikimedia.org/wikipedia/commons/d/d0/QR_code_for_mobile_English_Wikipedia.svg"
+            alt="QRIS" id="qris-image" class="qris-img">
+          <p class="qris-instruction">Buka aplikasi m-Banking atau e-Wallet Anda (Gopay, OVO, Dana, ShopeePay), lalu
+            scan kode QR di atas.</p>
+        </div>
+
+        <button class="btn-primary btn-block" style="margin-top:20px" onclick="confirmPayment()">Saya Sudah
+          Bayar</button>
+        <button class="btn-secondary btn-block" style="margin-top:10px" onclick="backToForm()">Kembali ke Data
+          Pengiriman</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="./js/app.js"></script>
 </body>
 
 </html>
