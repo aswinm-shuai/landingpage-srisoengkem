@@ -22,10 +22,33 @@
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+/* =========================================
+   PHASE 27.7 - GLOBAL ANTI OVERFLOW (Landing)
+   ========================================= */
+*, *::before, *::after {
+  box-sizing: border-box !important;
+}
+
+html, body {
+  overflow-x: hidden !important;
+  width: 100% !important;
+  max-width: 100vw !important;
+}
+
+img {
+  max-width: 100% !important;
+}
+
+.menu-card,
+.filosofi-card,
+.modal,
+.step-card {
+  max-width: 100% !important;
+  overflow: hidden !important;
+}
+
+section {
+  overflow-x: hidden !important;
 }
 
 body {
@@ -155,6 +178,82 @@ button {
   display: none;
   font-size: 24px;
   color: var(--emerald);
+}
+
+/* =========================================
+   PHASE 27.5 - PREMIUM MOBILE MENU
+   ========================================= */
+
+/* Backdrop overlay */
+.mobile-nav-backdrop {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 998;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.mobile-nav-backdrop.active {
+  display: block;
+  opacity: 1;
+}
+
+/* Mobile Nav Panel */
+@media (max-width: 768px) {
+  .nav-links {
+    display: flex !important;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 75%;
+    max-width: 300px;
+    background: #0F6A4A;
+    padding: 80px 32px 32px;
+    gap: 8px;
+    z-index: 999;
+    transform: translateX(100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: -8px 0 32px rgba(0,0,0,0.3);
+    overflow-y: auto;
+  }
+  .nav-links.open {
+    transform: translateX(0);
+  }
+  .nav-links a {
+    color: rgba(255,255,255,0.85);
+    font-size: 16px;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    display: block;
+  }
+  .nav-links a:hover {
+    color: #D6A94A;
+  }
+  .nav-links a::after {
+    display: none;
+  }
+  /* Close button inside mobile menu */
+  .nav-links .nav-close-btn {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: rgba(255,255,255,0.15);
+    border: none;
+    color: white;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 16px;
+  }
 }
 
 /* HERO SECTION */
@@ -862,4 +961,180 @@ button {
   color: var(--emerald);
   display: flex;
   justify-content: space-between;
+}
+
+
+/* REPLACE existing .lp-footer */
+.lp-footer {
+  text-align: center;
+  padding: 24px 16px;
+  font-size: 12px;
+  color: var(--text-muted);
+  opacity: 0.8;
+  background: var(--bg-white);
+  border-top: 1px solid rgba(0,0,0,0.05);
+  line-height: 2;
+}
+.lp-footer strong {
+  color: var(--emerald);
+}
+.lp-footer a {
+  color: var(--gold);
+  font-weight: 500;
+  text-decoration: none;
+}
+.lp-footer a:hover {
+  text-decoration: underline;
+}
+
+
+/* =========================================
+   UI/UX REFINEMENT OVERRIDES (PHASE 23-26)
+   ========================================= */
+
+/* Global Anti-Overflow */
+html, body {
+  overflow-x: hidden !important;
+  width: 100% !important;
+}
+
+/* Header Desktop Spacing */
+@media (min-width: 1024px) {
+  .header .container {
+    justify-content: space-between !important;
+  }
+  .nav-menu {
+    gap: 24px !important;
+  }
+}
+
+/* Header Mobile: Hide CTA */
+@media (max-width: 768px) {
+  .header .btn-primary {
+    display: none !important;
+  }
+}
+
+/* Hamburger Menu Redesign */
+.nav-menu {
+  background: #0F6A4A !important;
+  transition: all 0.3s ease !important;
+}
+.nav-menu.active {
+  box-shadow: -5px 0 15px rgba(0,0,0,0.5);
+}
+
+/* Backdrop */
+.menu-backdrop {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(3px);
+  z-index: 998;
+  display: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+.menu-backdrop.active {
+  display: block;
+  opacity: 1;
+}
+
+/* Button Contrast Fix */
+.btn-outline {
+  color: #111827 !important;
+  border-color: #111827 !important;
+  font-weight: 600 !important;
+}
+.btn-outline:hover {
+  background: #111827 !important;
+  color: #FBF3E4 !important;
+}
+
+/* Scroll indicator fade out handled via JS class */
+.scroll-indicator {
+  transition: opacity 0.3s ease;
+}
+.scroll-indicator.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* =========================================
+   SAAS UI/UX ADOPTION (SUBFLOW STYLE)
+   ========================================= */
+
+:root {
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 12px;
+  --space-lg: 16px;
+  --space-xl: 24px;
+  --space-2xl: 32px;
+  --space-3xl: 48px;
+  
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  
+  --shadow-float: 0 4px 20px rgba(0, 0, 0, 0.03), 0 2px 8px rgba(0, 0, 0, 0.02);
+  --accent-glow: rgba(15, 106, 74, 0.2);
+}
+
+/* 1. Typography Hierarchy Improvements */
+h1 { font-size: clamp(32px, 4vw, 48px); font-weight: 700; color: var(--text-main); line-height: 1.2; margin-bottom: var(--space-lg); }
+h2 { font-size: 32px; font-weight: 700; color: var(--text-main); line-height: 1.3; margin-bottom: var(--space-md); }
+h3 { font-size: 20px; font-weight: 600; color: var(--text-main); line-height: 1.4; margin-bottom: var(--space-sm); }
+p { font-size: 16px; color: var(--text-muted); line-height: 1.6; }
+
+/* 2. Cards */
+.filosofi-card, .menu-card, .step-card {
+  padding: var(--space-xl);
+  border-radius: var(--radius-xl);
+  border: 1px solid rgba(0,0,0,0.05);
+  box-shadow: var(--shadow-float);
+  transition: all 0.2s ease;
+}
+.menu-card {
+  padding: 0; /* Menu card has image at top, padding in info */
+}
+.menu-card .menu-info {
+  padding: var(--space-xl);
+}
+
+/* 3. Forms */
+.form-input, input, select, textarea {
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+.form-input:focus, input:focus, select:focus, textarea:focus {
+  border-color: var(--emerald);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+  outline: none;
+}
+
+/* 4. Buttons */
+.btn-primary, .btn-secondary, .btn-outline {
+  border-radius: var(--radius-sm);
+  transition: all 0.15s ease;
+  text-transform: none !important;
+}
+.btn-primary:hover, .btn-secondary:hover, .btn-outline:hover {
+  transform: translateY(-1px);
+}
+.btn-primary:active, .btn-secondary:active, .btn-outline:active {
+  transform: scale(0.98) !important;
+}
+.btn-primary:focus-visible, .btn-secondary:focus-visible, .btn-outline:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+/* Responsive Enforcements */
+@media (max-width: 768px) {
+  body { overflow-x: hidden !important; }
+  .modal { max-height: 85vh !important; overflow-y: auto !important; }
 }
