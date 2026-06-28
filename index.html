@@ -10,13 +10,13 @@
   <link
     href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap"
     rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
   <link rel="stylesheet" href="./css/style.css">
 
   <!-- Firebase SDK -->
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, onSnapshot, doc, setDoc, getDocs, updateDoc, writeBatch } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, collection, onSnapshot, doc, setDoc, getDocs, updateDoc, writeBatch, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
       // TODO: GANTI DENGAN API KEY FIREBASE ANDA
@@ -35,6 +35,9 @@
     window.fbOnSnapshot = onSnapshot;
     window.fbDoc = doc;
     window.fbSetDoc = setDoc;
+    window.fbGetDocs = getDocs;
+    window.fbQuery = query;
+    window.fbWhere = where;
     window.fbWriteBatch = writeBatch;
   </script>
 </head>
@@ -43,6 +46,7 @@
 
   <!-- NAVBAR -->
   <nav class="navbar">
+    <div class="mobile-nav-backdrop" id="mobile-nav-backdrop"></div>
     <div class="nav-logo">
       <img src="https://ui-avatars.com/api/?name=SS&background=0F6A4A&color=fff&rounded=true" alt="Logo">
       Sri Soengkem
@@ -296,29 +300,45 @@
     </div>
   </div>
 
+  <!-- GLOBAL FOOTER -->
+  <footer class="lp-footer">
+    <p>Powered by <strong>Syncro OS</strong> &mdash; Business Operations in Sync.</p>
+    <p>&copy; 2026 Sri Soengkem. All rights reserved.</p>
+    <p>Dibuat oleh <strong>Aswin Maulana</strong> &mdash;
+      <a href="https://syncro-os.web.app" target="_blank" rel="noopener">syncro-os.web.app</a>
+    </p>
+  </footer>
+
   <script src="./js/app.js"></script>
   <script>
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        // Unregister old Service Workers
-        navigator.serviceWorker.getRegistrations().then(registrations => {
-          registrations.forEach(registration => {
-            if (registration.active && !registration.active.scriptURL.endsWith('/service-worker.js')) {
-              registration.unregister();
-            }
-          });
+      fetch('./service-worker.js', { method: 'HEAD' })
+        .then(res => {
+          if (res.ok) {
+            navigator.serviceWorker.getRegistrations()
+              .then(registrations => {
+                registrations.forEach(r => r.unregister());
+              })
+              .then(() => {
+                navigator.serviceWorker.register('./service-worker.js')
+                  .then(() => console.log('[Syncro] ServiceWorker registered.'))
+                  .catch(err => console.warn('[Syncro] SW registration failed:', err));
+              });
+          } else {
+            console.warn('[Syncro] service-worker.js not found (HTTP ' + res.status + '). Skipping registration.');
+          }
+        })
+        .catch(() => {
+          console.warn('[Syncro] Network error checking service-worker.js. Skipping registration.');
         });
-
-        // Register new Service Worker
-        navigator.serviceWorker.register('/service-worker.js', { scope: '/' })
-          .then(registration => {
-            console.log('ServiceWorker registration successful with scope: ', registration.scope);
-          })
-          .catch(err => {
-            console.log('ServiceWorker registration failed: ', err);
-          });
-      });
     }
+
+    window.addEventListener('scroll', () => {
+      const indicator = document.querySelector('.scroll-indicator');
+      if (indicator) {
+        indicator.classList.toggle('hidden', window.scrollY > 100);
+      }
+    });
   </script>
 </body>
 
