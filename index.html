@@ -5,7 +5,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Sri Soengkem - Warisan Rasa Nusantara</title>
-  <link rel="icon" href="assets/icons/favicon.png">
+  <link rel="icon" href="assets/icons/icon-192x192-A.png">
   <link rel="manifest" href="manifest.json">
   <link
     href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap"
@@ -302,37 +302,11 @@
 
   <!-- GLOBAL FOOTER -->
   <footer class="lp-footer">
-    <p>Powered by <strong>Syncro OS</strong> &mdash; Business Operations in Sync.</p>
-    <p>&copy; 2026 Sri Soengkem. All rights reserved.</p>
-    <p>Dibuat oleh <strong>Aswin Maulana</strong> &mdash;
-      <a href="https://syncro-os.web.app" target="_blank" rel="noopener">syncro-os.web.app</a>
-    </p>
+    <p>&copy; 2026 Sri Soengkem. All rights reserved. Dibuat oleh Aswin Maulana</p>
   </footer>
 
   <script src="./js/app.js"></script>
   <script>
-    if ('serviceWorker' in navigator) {
-      fetch('./service-worker.js', { method: 'HEAD' })
-        .then(res => {
-          if (res.ok) {
-            navigator.serviceWorker.getRegistrations()
-              .then(registrations => {
-                registrations.forEach(r => r.unregister());
-              })
-              .then(() => {
-                navigator.serviceWorker.register('./service-worker.js')
-                  .then(() => console.log('[Syncro] ServiceWorker registered.'))
-                  .catch(err => console.warn('[Syncro] SW registration failed:', err));
-              });
-          } else {
-            console.warn('[Syncro] service-worker.js not found (HTTP ' + res.status + '). Skipping registration.');
-          }
-        })
-        .catch(() => {
-          console.warn('[Syncro] Network error checking service-worker.js. Skipping registration.');
-        });
-    }
-
     window.addEventListener('scroll', () => {
       const indicator = document.querySelector('.scroll-indicator');
       if (indicator) {
